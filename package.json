@@ -4,8 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "mocha",
-	"deploy": "gulp deploy"
+    "test": "mocha"
   },
   "author": "Mel Lota",
   "license": "ISC",
