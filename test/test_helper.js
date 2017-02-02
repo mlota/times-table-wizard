@@ -1,31 +1,7 @@
 "use strict";
 var chai = require("chai");
 var expect = chai.expect;
-var MathsUtils = require("../mathsutils");
 var AppHelper = require("../apphelper");
-
-describe("MathsUtilsHelper", function() {
-	var utils = new MathsUtils();
-	describe("#simpleSum", function() {
-		context("when passing two numeric values", function() {
-			it("returns correct sum of figures", function() {
-				var value = utils.simpleSum(1,1);
-				return expect(value).to.equal(2);
-			});
-		});
-	});
-	describe("#createAnswerTable", function() {
-		context("when passing a multiple", function() {
-			var value = utils.createAnswerTable(2);
-			it("returns an array with answers", function() {
-				return expect(value.length).to.equal(12);
-			});
-			it("has correct values for multiples", function() {
-				return expect(value[1]).to.equal(4);
-			});
-		});
-	});
-});
 
 describe("AppHelper", function() {
 	var appHelper = new AppHelper();
@@ -50,6 +26,37 @@ describe("AppHelper", function() {
 			var result = appHelper.getAnswerList(3);
 			it("returns a valid answer table", function() {
 				return expect(result[1].answer).to.equal(6);
+			});
+		});
+	});
+	describe("#isValidNumber", function() {
+		context("when passing a numeric value", function() {
+			it("should be false for 0", function() {
+				return expect(appHelper.isValidNumber(0)).to.equal(false);
+			});
+			it("should be true for 5", function() {
+				return expect(appHelper.isValidNumber(5)).to.equal(true);
+			});
+			it("should be true for 12", function() {
+				return expect(appHelper.isValidNumber(12)).to.equal(true);
+			});
+			it("should be false for 13", function() {
+				return expect(appHelper.isValidNumber(13)).to.equal(false);
+			});
+		});
+	});
+	describe("#checkScore", function() {
+		context("when passing a set of answers for the 3 times table", function() {
+			var answerList = appHelper.getAnswerList(3);
+			answerList[0].givenAnswer = 3;
+			answerList[1].givenAnswer = 6;
+			answerList[2].givenAnswer = 9;
+			answerList[3].givenAnswer = 12;
+			answerList[4].givenAnswer = 15;
+			answerList[7].givenAnswer = 24;
+			var result = appHelper.checkScore(answerList);
+			it("returns the correct score", function() {
+				return expect(result).to.equal(6);
 			});
 		});
 	});

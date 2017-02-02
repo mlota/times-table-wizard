@@ -10,16 +10,17 @@ app.constant = {
 	SESSION: {
 		ACTIVITY_TYPE: "activityType",
 		ANSWERS: "answers",
-		CURRENT_LOCATION: "currentLocation",
+		STATE: "currentState",
 		CURRENT_QUESTION: "currentQuestion",
-		PLAYER_NAME: "playerName"
+		PLAYER_NAME: "playerName",
+		CHOSEN_PRACTICE_NUMBER: "chosenPracticeNumber"
 	}
 };
 
 app.launch(function(request, response) {
-	// Initialise global session variables
 	var session = request.getSession();
 	session.set(app.constant.SESSION.CURRENT_QUESTION, 1);
+	session.set(app.constant.SESSION.STATE, helper.state.INTRODUCTION);
 
 	var prompt = "Welcome to times table wizard. Who is playing?";
 	var reprompt = "Please tell me your name.";
@@ -27,34 +28,31 @@ app.launch(function(request, response) {
 });
 
 app.intent("PlayerNamePromptIntent", helper.intentSchema.PLAYER_NAME_PROMPT, function(request, response) {
-	var firstName = request.slot("FIRSTNAME");
-
-	if (_.isEmpty(firstName)) {
-		var prompt = "Sorry I didn\'t catch your name. Please tell me your name.";
-		response.say(prompt).shouldEndSession(false);
-	} else {
-		var namedGreeting = _.template("Hi ${playerName}. Would you like to practice your times table or play a quiz?")({ 
-			playerName: firstName 
-		});
-		var session = request.getSession();
-		session.set(app.constant.SESSION.PLAYER_NAME, firstName);
-		response.say(namedGreeting).shouldEndSession(false);
-	}
-});
-
-app.intent("ChooseActivityTypeIntent", helper.intentSchema.CHOOSE_ACTIVITY_TYPE, function(request, response) {
-	var activityType = request.slot("ACTIVITY");
 	var session = request.getSession();
+	var state = session.get(app.constant.SESSION.STATE);
+	session.set(app.constant.SESSION.STATE, helper.state.AWAITING_NAME);
 
-	session.set(app.constant.SESSION.ACTIVITY_TYPE, activityType);
-	session.set(app.constant.SESSION.CURRENT_LOCATION, helper.location.NAME_PROMPT);
-	
-	if (activityType === helper.activityType.PRACTICE) {
-		session.set(app.constant.SESSION.CURRENT_LOCATION, helper.location.AWAITING_PRACTICE_NUMBER);
-		response.say("Ok. Which times table would you like to practice?").shouldEndSession(false);
+	// Check if user has accidentally entered this intent whilst answering practice questions
+	if (state === helper.state.AWAITING_PRACTICE_NUMBER || state == helper.state.PRACTICE_STARTED) {
+		response.say("Sorry I didn't recognise your answer, could you please repeat it?").shouldEndSession(false);
+		//return true;
+	} else {
 
-	} else if (activityType == helper.activityType.QUIZ) {
-		response.say("Ok. Which times table would you like me to quiz you on??").shouldEndSession(false);
+		var firstName = request.slot("FIRSTNAME");
+
+		if (_.isEmpty(firstName)) {
+			var prompt = "Sorry I didn't catch your name. Please tell me your name.";
+			response.say(prompt).shouldEndSession(false);
+		} else {
+			session.set(app.constant.SESSION.PLAYER_NAME, firstName);
+			session.set(app.constant.SESSION.STATE, helper.state.AWAITING_PRACTICE_NUMBER);
+
+			var namedGreeting = _.template("Hi ${playerName}. Which times table would you like to practice?")({ 
+				playerName: firstName 
+			});
+			var reprompt = "Please say a number between 1 and 12";
+			response.say(namedGreeting).reprompt(reprompt).shouldEndSession(false);
+		}
 	}
 });
 
@@ -62,21 +60,24 @@ app.intent("SpokenNumberIntent", helper.intentSchema.SPOKEN_NUMBER, function(req
 	var answers;
 	var number = request.slot("NUMBER");
 	var session = request.getSession();
-	var currentLocation = session.get(app.constant.SESSION.CURRENT_LOCATION);
+	var state = session.get(app.constant.SESSION.STATE);
 
-	if (currentLocation === helper.location.AWAITING_PRACTICE_NUMBER) {
-		// Set number and begin quiz
-		session.set(app.constant.SESSION.CURRENT_LOCATION, helper.location.PRACTICE_STARTED);
-		//response.say("Ok let's practice our 2 times table. Would you like to hear me read out the 2 times table first?").shouldEndSession(false); (YES/NO)
+	if (state === helper.state.AWAITING_PRACTICE_NUMBER) {
+		if (!helper.isValidNumber(number)) {
+			response.say("Sorry, you must specify a number between 1 and 12.").shouldEndSession(false);
+			return true;
+		}
+
+		session.set(app.constant.SESSION.CHOSEN_PRACTICE_NUMBER, number);
+		session.set(app.constant.SESSION.STATE, helper.state.PRACTICE_STARTED);
 
 		// Generate a list of questions and answers for the requested number and store in session
 		answers = helper.getAnswerList(number);
 		session.set(app.constant.SESSION.ANSWERS, answers);
 
-		// Ask first question
-		response.say(answers[0].question).shouldEndSession(false);
+		response.say("Ok great let's practice our " + number + " times table. Would you like to hear me read out the " + number + " times table first?").shouldEndSession(false);
 
-	} else if (currentLocation == helper.location.PRACTICE_STARTED) {
+	} else if (state == helper.state.PRACTICE_STARTED) {
 		var currentQuestion = session.get(app.constant.SESSION.CURRENT_QUESTION);
 		answers = session.get(app.constant.SESSION.ANSWERS);
 
@@ -95,6 +96,28 @@ app.intent("SpokenNumberIntent", helper.intentSchema.SPOKEN_NUMBER, function(req
 
 		response.say(answers[currentQuestion].question).shouldEndSession(false);
 	}
+});
+
+app.intent("AMAZON.YesIntent", function(request, response) {
+	var session = request.getSession();
+	session.set(app.constant.SESSION.STATE, app.constant.SESSION.READING_NUMBERS);
+	var number = session.get(app.constant.SESSION.CHOSEN_PRACTICE_NUMBER);
+
+	var prompt = helper.getSpeechForTimesTable(number);
+	response.say(prompt).shouldEndSession(false);
+});
+
+app.intent("AMAZON.NoIntent", function(request, response) {
+	// If user has specified no, then start the practice session
+	var session = request.getSession();
+	var answers = session.get(app.constant.SESSION.ANSWERS);
+	session.set(app.constant.SESSION.STATE, "NO");
+
+	response.say("Ok, then let's begin our practice.").shouldEndSession(false);
+	session.set(app.constant.SESSION.STATE, helper.state.PRACTICE_STARTED);
+
+	// Ask first question
+	response.say(answers[0].question).shouldEndSession(false);
 });
 
 module.exports = app;

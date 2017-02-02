@@ -17,6 +17,7 @@
     "request-promise": "^4.1.1"
   },
   "devDependencies": {
+    "del": "^2.2.2",
     "gulp": "^3.9.1",
     "gulp-zip": "^4.0.0"
   }

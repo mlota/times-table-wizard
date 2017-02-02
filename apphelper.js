@@ -7,7 +7,7 @@ AppHelper.prototype.intentSchema = {
 		"slots": {
 			"FIRSTNAME": "AMAZON.GB_FIRST_NAME"
 		},
-		"utterances": ["{-|FIRSTNAME}"]
+		"utterances": ["{my name is} {-|FIRSTNAME}", "{-|FIRSTNAME}"]
 	},
 	CHOOSE_ACTIVITY_TYPE: {
 		"slots": {
@@ -19,7 +19,10 @@ AppHelper.prototype.intentSchema = {
 		"slots": {
 			"NUMBER": "AMAZON.NUMBER"
 		},
-		"utterances": ["{-|NUMBER}"]
+		"utterances": [
+			"{|I want to practice|I would like to practice|practice} {|my} {-|NUMBER} {times table}", 
+			"{|hmm|err} {|I think|it's|is it} {-|NUMBER}"
+		]
 	}
 };
 
@@ -27,11 +30,13 @@ AppHelper.prototype.constant = {
 	TIMES_TABLE_MAX_VALUE: 12
 };
 
-AppHelper.prototype.location = {
+AppHelper.prototype.state = {
 	INTRODUCTION: "Introduction",
-	NAME_PROMPT: "NamePrompt",
+	AWAITING_NAME: "AwaitingName",
+	NAME_SPECIFIED: "NameSpecified",
 	AWAITING_PRACTICE_NUMBER: "AwaitingPracticeNumber",
-	PRACTICE_STARTED: "PracticeStarted"
+	PRACTICE_STARTED: "PracticeStarted",
+	READING_NUMBERS: "ReadingNumbers"
 };
 
 AppHelper.prototype.activityType = {
@@ -74,6 +79,20 @@ AppHelper.prototype.getAnswerList = function(number) {
 		answers.push(obj);
 	}
 	return answers;
+};
+
+AppHelper.prototype.checkScore = function(answers) {
+	var correctAnswers = 0;
+	_.each(answers, function(answer) {
+		if (answer.givenAnswer === answer.answer) {
+			correctAnswers++;
+		}
+	});
+	return correctAnswers;
+};
+
+AppHelper.prototype.isValidNumber = function(number) {
+	return _.inRange(number, 1, this.constant.TIMES_TABLE_MAX_VALUE + 1);
 };
 
 module.exports = AppHelper;
