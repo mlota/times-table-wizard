@@ -60,4 +60,24 @@ describe("AppHelper", function() {
 			});
 		});
 	});
+	describe("#getResultSpeech", function() {
+		context("when passing scores for the practice session", function() {
+			it("returns the correct speech for a pefect score", function() {
+				return expect(appHelper.getResultSpeech(12, "Joe"))
+					.to.equal("You answered all questions correctly! That's fantastic Joe, keep up the good work!");
+			});
+			it("returns the correct speech for a high score", function() {
+				return expect(appHelper.getResultSpeech(9, "Joe"))
+					.to.equal("You answered 9 out of 12 correctly. That's a great score Joe, congratulations.");
+			});
+			it("returns the correct speech for a medium score", function() {
+				return expect(appHelper.getResultSpeech(5, "Joe"))
+					.to.equal("You answered 5 out of 12. Joe, you're doing well. Keep practising to increase your score.");
+			});
+			it("returns the correct speech for a low score", function() {
+				return expect(appHelper.getResultSpeech(3, "Joe"))
+					.to.equal("You answered 3 out of 12. Keep practising Joe, and you'll score will improve in no time.");
+			});
+		});
+	});
 });

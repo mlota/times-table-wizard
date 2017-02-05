@@ -1,3 +1,5 @@
+"use strict";
+
 var _ = require("lodash");
 
 function AppHelper() {}
@@ -36,12 +38,22 @@ AppHelper.prototype.state = {
 	NAME_SPECIFIED: "NameSpecified",
 	AWAITING_PRACTICE_NUMBER: "AwaitingPracticeNumber",
 	PRACTICE_STARTED: "PracticeStarted",
-	READING_NUMBERS: "ReadingNumbers"
+	READING_NUMBERS: "ReadingNumbers",
+	PRACTICE_FINISHED: "PracticeFinished"
 };
 
 AppHelper.prototype.activityType = {
 	PRACTICE: "practice",
 	QUIZ: "quiz"
+};
+
+AppHelper.prototype.prompt = {
+	SCORE: {
+		PERFECT: "You answered all questions correctly! That's fantastic ${_playerName}, keep up the good work!",
+		HIGH: "You answered ${_score} out of ${_maxScore} correctly. That's a great score ${_playerName}, congratulations.",
+		MEDIUM: "You answered ${_score} out of ${_maxScore}. ${_playerName}, you're doing well. Keep practising to increase your score.",
+		LOW: "You answered ${_score} out of ${_maxScore}. Keep practising ${_playerName}, and you'll score will improve in no time."
+	}
 };
 
 AppHelper.prototype.getSpeechForTimesTable = function(number) {
@@ -93,6 +105,24 @@ AppHelper.prototype.checkScore = function(answers) {
 
 AppHelper.prototype.isValidNumber = function(number) {
 	return _.inRange(number, 1, this.constant.TIMES_TABLE_MAX_VALUE + 1);
+};
+
+AppHelper.prototype.getResultSpeech = function(score, playerName) {
+	var obj = {
+		_score: score,
+		_maxScore: this.constant.TIMES_TABLE_MAX_VALUE,
+		_playerName: playerName,
+	};
+
+	if (score === this.constant.TIMES_TABLE_MAX_VALUE) {
+		return _.template(this.prompt.SCORE.PERFECT)(obj);
+	} else if (score >= 8) {
+		return _.template(this.prompt.SCORE.HIGH)(obj);
+	} else if (score >= 4) {
+		return _.template(this.prompt.SCORE.MEDIUM)(obj);
+	} else {
+		return _.template(this.prompt.SCORE.LOW)(obj);
+	}
 };
 
 module.exports = AppHelper;
